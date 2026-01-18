@@ -1,5 +1,5 @@
-t = int(input())
-for i in range(t):
+num_test_cases = int(input())
+for i in range(num_test_cases):
     num_digits = int(input())
     digits = list(map(int, input().split()))
 
