@@ -27,36 +27,59 @@ Grid = List[List[int]]
 
 
 def read_input(filename: str) -> Grid:
-    grid = []
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            for line_num, line in enumerate(f, start=1):
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue  # пропускаем комментарии и пустые строки
+    grid: Grid = []
+    expected_width = None
+    expected_height = None
 
-                # Пропускаем первую строку, если это размеры
-                if line_num == 1 and all(x.isdigit() for x in line.split()):
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line_num, line in enumerate(file, start=1):
+                line = line.rstrip('\n')
+
+                if not line.strip() or line.lstrip().startswith('#'):
                     continue
 
+                tokens = line.split()
+                if expected_width is None and len(tokens) == 2 and all(t.isdigit() for t in tokens):
+                    expected_width, expected_height = map(int, tokens)
+                    continue
+
+                # Преобразуем строку поля в список клеток
                 row = []
                 for ch in line:
                     if ch in ('X', '1'):
                         row.append(1)
-                    elif ch in ('.', '0'):
+                    elif ch in ('.', '0', ' '):
                         row.append(0)
                     else:
-                        # Любой другой символ считаем мёртвой клеткой
-                        row.append(0)
+                        raise ValueError(
+                            f'Недопустимый символ "{ch}" в строке {line_num}'
+                        )
+
+                # Проверяем ширину строки
+                if expected_width is not None and len(row) != expected_width:
+                    raise ValueError(
+                        f'Неверная длина строки {line_num}: '
+                        f'ожидалось {expected_width}, получено {len(row)}'
+                    )
+
                 grid.append(row)
 
         if not grid:
-            raise ValueError('Входной файл пуст или содержит только комментарии')
+            raise ValueError('Входной файл не содержит данных игрового поля')
+
+        # Проверяем высоту поля
+        if expected_height is not None and len(grid) != expected_height:
+            raise ValueError(
+                f'Неверное количество строк поля: '
+                f'ожидалось {expected_height}, получено {len(grid)}'
+            )
 
         return grid
 
     except FileNotFoundError:
         raise FileNotFoundError(f'Файл "{filename}" не найден')
+
 
 
 def write_output(grid: Grid, filename: str, step: int) -> None:
@@ -198,15 +221,15 @@ def main():
 
         config = Config(
             input_file=args.input_file,
-            output_csv=args.output_file,
+            output_file=args.output_file,
             generations=args.steps
         )
 
         grid = read_input(config.input_file)
-        open(config.output_csv, 'w').close()
+        open(config.output_file, 'w').close()
 
         for step in range(config.generations + 1):
-            write_output(grid, config.output_csv, step)
+            write_output(grid, config.output_file, step)
             write_png(grid, step, config)
             grid = next_generation(grid)
 
