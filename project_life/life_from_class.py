@@ -9,6 +9,13 @@ from typing import List
 
 @dataclass
 class Config:
+    """
+    Конфигурация игры «Жизнь».
+
+    Содержит параметры ввода/вывода, количество поколений,
+    а также настройки визуализации и генерации GIF.
+    """
+
     input_file: str = 'life_input.txt'     # дефолтное имя файла ввода, если не указываем при запуске
     output_file: str = 'output.txt'        # дефолтное имя файла вывода, если не указываем при запуске
     generations: int = 10                 # дефолтное количество шагов, если не указываем при запуске
@@ -27,6 +34,14 @@ Grid = List[List[int]]
 
 
 def read_input(filename: str) -> Grid:
+    """
+     Считывает начальное состояние игрового поля из файла.
+
+    :param filename: str, путь к входному файлу
+    :return: Grid, двумерный список (. — мёртвая, X — живая)
+    :raises FileNotFoundError: если файл не найден
+    :raises ValueError: если файл пуст или содержит некорректные данные
+    """
     grid: Grid = []
     expected_width = None
     expected_height = None
@@ -83,6 +98,15 @@ def read_input(filename: str) -> Grid:
 
 
 def write_output(grid: Grid, filename: str, step: int) -> None:
+    """
+    Записывает текущее поколение игрового поля в файл.
+
+    :param grid: Grid, текущее состояние поля
+    :param filename: str, файл для записи результатов
+    :param step: int, номер поколения
+    :return: None
+    :raises: OSError: если произошла ошибка при записи файла
+    """
     try:
         with open(filename, 'a', encoding='utf-8') as f:
             f.write(f'--- Step {step} ---\n')
@@ -93,6 +117,14 @@ def write_output(grid: Grid, filename: str, step: int) -> None:
 
 
 def live_neighbors(grid: Grid, row: int, col: int) -> int:
+    """
+    Подсчитывает количество живых соседей у клетки.
+
+    :param grid: Grid, игровое поле
+    :param row: int, индекс строки клетки
+    :param col: int, индекс столбца клетки
+    :return: int, количество живых соседей
+    """
     rows, cols = len(grid), len(grid[0])
     count = 0
 
@@ -109,6 +141,13 @@ def live_neighbors(grid: Grid, row: int, col: int) -> int:
 
 
 def next_generation(grid: Grid) -> Grid:
+    """
+    Вычисляет следующее поколение игрового поля
+    по правилам игры «Жизнь».
+
+    :param grid: Grid, текущее состояние поля
+    :return: Grid, новое поколение поля
+    """
     rows, cols = len(grid), len(grid[0])
     new_grid = [[0] * cols for _ in range(rows)]
 
@@ -127,11 +166,28 @@ def next_generation(grid: Grid) -> Grid:
 
 
 def age_color(age: int, base_color: tuple) -> tuple:
+    """
+    Вычисляет цвет клетки в зависимости от её возраста.
+
+    Чем больше возраст клетки, тем светлее её цвет.
+
+    :param age: int, возраст клетки
+    :param base_color: tuple, базовый RGB-цвет
+    :return: tuple, RGB-цвет клетки
+    """
     factor = min(age * 20, 255)
     return tuple(min(c + factor, 255) for c in base_color)
 
 
 def write_png(grid: Grid, step: int, config: Config) -> None:
+    """
+    Создаёт PNG-изображение текущего поколения игрового поля.
+
+    :param grid: Grid, текущее состояние поля
+    :param step: int, номер поколения
+    :param config: Config, параметры конфигурации
+    :return: None
+    """
     os.makedirs(config.gen_images_dir, exist_ok=True)
 
     rows, cols = len(grid), len(grid[0])
@@ -167,6 +223,14 @@ def write_png(grid: Grid, step: int, config: Config) -> None:
 
 
 def make_gif(config: Config) -> None:
+    """
+    Создаёт GIF-анимацию из сгенерированных PNG-изображений.
+
+    :param config: Config, параметры конфигурации
+    :return: None
+    :raises RuntimeError: если не удалось создать GIF
+    :raises FileNotFoundError: не удалось найти файлы PNG
+    """
     try:
         gen_image = sorted(
             os.path.join(config.gen_images_dir, f)
@@ -175,7 +239,7 @@ def make_gif(config: Config) -> None:
         )
 
         if not gen_image:
-            raise ValueError('Нет PNG файлов для создания GIF')
+            raise FileNotFoundError('Нет PNG файлов для создания GIF')
 
         images = [Image.open(frame) for frame in gen_image]
 
@@ -216,6 +280,11 @@ def parse_args():
 
 
 def main():
+    """
+    Запуск программы
+
+    :return: None
+    """
     try:
         args = parse_args()
 
